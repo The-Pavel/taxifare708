@@ -1,12 +1,14 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
+BUCKET_NAME="lewagon-data-708-pavel"
+BUCKET_TRAIN_DATA_PATH="data/train_10k.csv"
 
 def get_data(filename):
     """
     Reads data from a csv file and returns a list of dictionaries.
     """
-    return pd.read_csv(filename)
-
+    return pd.read_csv(f"gs://{BUCKET_NAME}/{BUCKET_TRAIN_DATA_PATH}")
+                       
 def clean_data(df):
     df = df.dropna(how='any', axis='rows')
     df = df[(df.dropoff_latitude != 0) | (df.dropoff_longitude != 0)]

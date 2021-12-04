@@ -8,8 +8,11 @@ from sklearn.neighbors import KNeighborsRegressor
 from xgboost import XGBRegressor
 import mlflow
 from mlflow.tracking import MlflowClient
-import memoized_property
+from google.cloud import storage
+import joblib
 
+
+    
 MLFLOW_URI = "https://mlflow.lewagon.co/"
 
 class Trainer():
@@ -58,12 +61,14 @@ class Trainer():
         self.evaluate_pipe(x_train, x_test, y_train, y_test, model_name)
         
         ## MLflow section calls
-        self.create_mlflow_experiment()
-        self.create_mlflow_run()
-        self.mlflow_log_param('model', model_name)
-        if model_name == "KNN":
-            self.mlflow_log_param('knn-neighbors', 10)
-        self.mlflow_log_metric('default score', self.score)
+        # self.create_mlflow_experiment()
+        # self.create_mlflow_run()
+        # self.mlflow_log_param('model', model_name)
+        # if model_name == "KNN":
+        #     self.mlflow_log_param('knn-neighbors', 10)
+        # self.mlflow_log_metric('default score', self.score)
+        
+        
         
         
     ### MLFlow section
@@ -82,6 +87,18 @@ class Trainer():
         run = self.client.create_run(self.experiment_id)
         self.run_id = run.info.run_id
         
+    ### GCP Section
+    def upload_model_to_gcp(self):
+        BUCKET_NAME = "lewagon-data-708-pavel"
+        STORAGE_LOCATION = "models/model.joblib"
+        client = storage.Client()
+        bucket = client.bucket(BUCKET_NAME)
+        blob = bucket.blob(STORAGE_LOCATION)
+        blob.upload_from_filename('model.joblib')
+    
+    def save_model(self):
+        joblib.dump(self.pipe, f'model_.joblib')
+    
         
     
 if __name__ == '__main__':
@@ -95,12 +112,14 @@ if __name__ == '__main__':
     # do a train/test split
     x_train, x_test, y_train, y_test = holdout(x, y, test_size=0.2)
     models = [
-        ('linreg', LinearRegression()),
-        ('KNN', KNeighborsRegressor(n_neighbors=10)),
-        ('XGB', XGBRegressor())
+        ('linreg', LinearRegression())
+        # ('KNN', KNeighborsRegressor(n_neighbors=10)),
+        # ('XGB', XGBRegressor())
     ]
     for model_name, model in models:
         trainer.train(x_train, x_test, y_train, y_test, model_name, model)
+        trainer.save_model()
+        trainer.upload_model_to_gcp()
     
     
     
@@ -111,3 +130,19 @@ if __name__ == '__main__':
     
     
     
+    
+    
+    # ## GCP stuff
+
+    # def upload_model_to_gcp(self):
+    #     from google.cloud import storage
+    #     import joblib
+    #     joblib.dump(self.pipe, 'model.joblib')
+    #     client = storage.Client()
+    #     BUCKET_NAME = 'lewagon-data-708-pavel'
+    #     STORAGE_LOCATION = 'models/simpletaxifare/model.joblib'
+    #     bucket = client.bucket(BUCKET_NAME)
+
+    #     blob = bucket.blob(STORAGE_LOCATION)
+
+    #     blob.upload_from_filename('model.joblib')
