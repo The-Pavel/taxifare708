@@ -10,20 +10,26 @@ import mlflow
 from mlflow.tracking import MlflowClient
 from google.cloud import storage
 import joblib
+import pandas as pd
 
 
     
 MLFLOW_URI = "https://mlflow.lewagon.co/"
+### CHANGE THESE TO YOURS 👇
+BUCKET_NAME = "lewagon-data-708-pavel"
+STORAGE_LOCATION = "models/model.joblib"
 
 class Trainer():
-    def __init__(self, experiment_name, **kwargs):
-        pass
+    def __init__(self, experiment_name, model_name='linreg', model=LinearRegression()):
         self.experiment_name = experiment_name
         mlflow.set_tracking_uri(MLFLOW_URI)
         self.client = MlflowClient()
         self.experiment_id = None
+        self.pipe = None
+        self.model_name = model_name
+        self.model = model
     
-    def create_pipeline(self, model_name, model):
+    def create_pipeline(self):
         # create distance pipeline
         dist_pipe = Pipeline([
             ('dist_trans', DistanceTransformer()),
@@ -44,34 +50,37 @@ class Trainer():
         # training pipeline
         self.pipe = Pipeline([
             ('preproc', preproc_pipe),
-            (model_name, model)
+            (self.model_name, self.model)
         ])
     
-    def evaluate_pipe(self, X_train, X_test, y_train, y_test, model_name):
+    def evaluate_pipe(self, X_test, y_test):
         # train the pipelined model
-        self.pipe.fit(X_train, y_train)
-
         self.score = self.pipe.score(X_test, y_test)
         
-        print(f"score with {model_name}", self.score)
+        print(f"score with {self.model_name}", self.score)
+        return self.pipe
     
-    def train(self, x_train, x_test, y_train, y_test, model_name, model):
+    def train(self, x_train, x_test, y_train, y_test):
         # create a pipeline
-        self.create_pipeline(model_name, model)
-        self.evaluate_pipe(x_train, x_test, y_train, y_test, model_name)
         
-        ## MLflow section calls
+        ## If model is not loaded from GCP, create a pipeline
+        if self.pipe == None:
+            self.create_pipeline()
+            print(x_train.columns)
+            self.pipe.fit(x_train, y_train)
+        self.evaluate_pipe(x_test, y_test)
+        
+        ### MLflow tracking calls
         # self.create_mlflow_experiment()
         # self.create_mlflow_run()
         # self.mlflow_log_param('model', model_name)
         # if model_name == "KNN":
         #     self.mlflow_log_param('knn-neighbors', 10)
         # self.mlflow_log_metric('default score', self.score)
+        return self.pipe
         
         
-        
-        
-    ### MLFlow section
+    ### MLFlow tracking functionss
     def mlflow_log_param(self, key, value):
         self.client.log_param(self.run_id, key, value)
     
@@ -87,10 +96,9 @@ class Trainer():
         run = self.client.create_run(self.experiment_id)
         self.run_id = run.info.run_id
         
-    ### GCP Section
+    ### GCP Section functions
     def upload_model_to_gcp(self):
-        BUCKET_NAME = "lewagon-data-708-pavel"
-        STORAGE_LOCATION = "models/model.joblib"
+        
         client = storage.Client()
         bucket = client.bucket(BUCKET_NAME)
         blob = bucket.blob(STORAGE_LOCATION)
@@ -98,51 +106,39 @@ class Trainer():
     
     def save_model(self):
         joblib.dump(self.pipe, f'model_.joblib')
+        
+    def download_model(self, bucket=BUCKET_NAME):
+        client = storage.Client().bucket(bucket)
+        blob = client.blob(STORAGE_LOCATION)
+        blob.download_to_filename('model.joblib')
+        print("=> pipeline downloaded from storage")
+        self.pipe = joblib.load('model.joblib')
     
         
     
 if __name__ == '__main__':
     trainer = Trainer('[CN] Shanghai 708 TaxiFare')
     # get data
-    df = get_data('./raw_data/train_10k.csv')
+    df = get_data()
     # clean data
     df = clean_data(df)
     # get features and targets
     x, y = set_features_targets(df)
     # do a train/test split
     x_train, x_test, y_train, y_test = holdout(x, y, test_size=0.2)
-    models = [
-        ('linreg', LinearRegression())
-        # ('KNN', KNeighborsRegressor(n_neighbors=10)),
-        # ('XGB', XGBRegressor())
-    ]
-    for model_name, model in models:
-        trainer.train(x_train, x_test, y_train, y_test, model_name, model)
-        trainer.save_model()
-        trainer.upload_model_to_gcp()
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    # ## GCP stuff
-
-    # def upload_model_to_gcp(self):
-    #     from google.cloud import storage
-    #     import joblib
-    #     joblib.dump(self.pipe, 'model.joblib')
-    #     client = storage.Client()
-    #     BUCKET_NAME = 'lewagon-data-708-pavel'
-    #     STORAGE_LOCATION = 'models/simpletaxifare/model.joblib'
-    #     bucket = client.bucket(BUCKET_NAME)
-
-    #     blob = bucket.blob(STORAGE_LOCATION)
-
-    #     blob.upload_from_filename('model.joblib')
+    ### For training and evaluating model locally
+    # models = [
+    #     ('linreg', LinearRegression())
+    #     ('KNN', KNeighborsRegressor(n_neighbors=10)),
+    #     ('XGB', XGBRegressor())
+    # ]
+    # for model_name, model in models:
+    #     pipe = trainer.train(x_train, x_test, y_train, y_test)  
+        ## Pushing model to GCP
+        # trainer.save_model()
+        # trainer.upload_model_to_gcp()
+        
+    ### For evaluating model trained on GCP
+    trainer.download_model()
+    pipe = trainer.evaluate_pipe(x_test, y_test)
