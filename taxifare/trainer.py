@@ -52,6 +52,7 @@ class Trainer():
             ('preproc', preproc_pipe),
             (self.model_name, self.model)
         ])
+        return self.pipe
     
     def evaluate_pipe(self, X_test, y_test):
         # train the pipelined model
@@ -66,7 +67,6 @@ class Trainer():
         ## If model is not loaded from GCP, create a pipeline
         if self.pipe == None:
             self.create_pipeline()
-            print(x_train.columns)
             self.pipe.fit(x_train, y_train)
         self.evaluate_pipe(x_test, y_test)
         
