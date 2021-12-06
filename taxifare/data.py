@@ -24,6 +24,8 @@ def clean_data(df):
     df = df[df["pickup_longitude"].between(-74.3, -72.9 )]
     df = df[df["dropoff_latitude"].between(40, 42)]
     df = df[df["dropoff_longitude"].between(-74, -72.9)]
+    # drop key column since it is not helpful and not dynamic
+    df.drop('key', axis='columns', inplace=True)
     return df
 
 def set_features_targets(df):
