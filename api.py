@@ -16,6 +16,10 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
+@app.get('/')
+def home():
+    return {"location": "homepage"}
+
 @app.get("/predict")
 def predict(pickup_datetime, pickup_latitude, pickup_longitude, dropoff_latitude, dropoff_longitude, passenger_count):
     trainer = Trainer('[CN] Shanghai 708 TaxiFare-API')
@@ -36,10 +40,10 @@ def predict(pickup_datetime, pickup_latitude, pickup_longitude, dropoff_latitude
 
     new_ride_info = {
         "pickup_datetime": pickup_datetime,
-        "pickup_longitude": float(pickup_latitude),
+        "pickup_longitude": float(pickup_longitude),
         "pickup_latitude": float(pickup_latitude),
-        "dropoff_longitude": float(pickup_latitude),
-        "dropoff_latitude": float(pickup_latitude),
+        "dropoff_longitude": float(dropoff_longitude),
+        "dropoff_latitude": float(dropoff_latitude),
         "passenger_count": int(passenger_count)
     }
     

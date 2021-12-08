@@ -4,13 +4,10 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import LinearRegression
-from sklearn.neighbors import KNeighborsRegressor
-from xgboost import XGBRegressor
 import mlflow
 from mlflow.tracking import MlflowClient
 from google.cloud import storage
 import joblib
-import pandas as pd
 
 
     
