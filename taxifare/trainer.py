@@ -102,7 +102,7 @@ class Trainer():
         blob.upload_from_filename('model.joblib')
     
     def save_model(self):
-        joblib.dump(self.pipe, f'model_.joblib')
+        joblib.dump(self.pipe, f'model.joblib')
         
     def download_model(self, bucket=BUCKET_NAME):
         client = storage.Client().bucket(bucket)
@@ -125,17 +125,17 @@ if __name__ == '__main__':
     x_train, x_test, y_train, y_test = holdout(x, y, test_size=0.2)
     
     ### For training and evaluating model locally
-    # models = [
-    #     ('linreg', LinearRegression())
-    #     ('KNN', KNeighborsRegressor(n_neighbors=10)),
-    #     ('XGB', XGBRegressor())
-    # ]
-    # for model_name, model in models:
-    #     pipe = trainer.train(x_train, x_test, y_train, y_test)  
-        ## Pushing model to GCP
-        # trainer.save_model()
+    models = [
+        ('linreg', LinearRegression())
+        # ('KNN', KNeighborsRegressor(n_neighbors=10)),
+        # ('XGB', XGBRegressor())
+    ]
+    for model_name, model in models:
+        pipe = trainer.train(x_train, x_test, y_train, y_test)  
+        # Pushing model to GCP
+        trainer.save_model()
         # trainer.upload_model_to_gcp()
         
     ### For evaluating model trained on GCP
-    trainer.download_model()
-    pipe = trainer.evaluate_pipe(x_test, y_test)
+    # trainer.download_model()
+    # pipe = trainer.evaluate_pipe(x_test, y_test)

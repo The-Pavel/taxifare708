@@ -1,9 +1,12 @@
 FROM python:3.8.6-buster
 
-COPY . /app
+RUN mkdir app
+COPY api.py /app
+COPY model.joblib /app
+COPY taxifare /taxifare
+COPY requirements.txt .
 
 RUN pip install --upgrade pip
-RUN pip install -r /app/requirements.txt
-RUN pip install /app
+RUN pip install -r requirements.txt
 
-CMD uvicorn app.api:app --host 0.0.0.0
+CMD uvicorn app.api:app --host 0.0.0.0 --port $PORT

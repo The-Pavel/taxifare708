@@ -72,3 +72,19 @@ submit_training:
 		--runtime-version=${RUNTIME_VERSION} \
 		--region ${REGION} \
 		--stream-logs
+
+PROJECT_ID='majestic-voice-331803'
+DOCKER_IMAGE_NAME='taxifare-api'
+REGISTRY_REGION='us.gcr.io'
+
+build_gcloud_image:
+	@docker build -t ${REGISTRY_REGION}/${PROJECT_ID}/${DOCKER_IMAGE_NAME} .
+
+push_gcr_image:
+	@docker push ${REGISTRY_REGION}/${PROJECT_ID}/${DOCKER_IMAGE_NAME}
+
+test_gcr_image_locally:
+	@docker run -e PORT=8000 -p 8080:8000 ${REGISTRY_REGION}/${PROJECT_ID}/${DOCKER_IMAGE_NAME}
+
+deploy_gcr_container:
+	@gcloud run deploy --image ${REGISTRY_REGION}/${PROJECT_ID}/${DOCKER_IMAGE_NAME} --platform managed --region ${REGION}

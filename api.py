@@ -1,10 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from taxifare.trainer import Trainer
-from taxifare.data import get_data, clean_data, set_features_targets, holdout
 import pandas as pd
 from datetime import datetime
 import pytz
+import joblib
 
 app = FastAPI()
 
@@ -22,17 +21,7 @@ def home():
 
 @app.get("/predict")
 def predict(pickup_datetime, pickup_latitude, pickup_longitude, dropoff_latitude, dropoff_longitude, passenger_count):
-    trainer = Trainer('[CN] Shanghai 708 TaxiFare-API')
-    df = get_data()
-    # clean data
-    df = clean_data(df)
-    # get features and targets
-    x, y = set_features_targets(df)
-
-    # do a train/test split
-    x_train, x_test, y_train, y_test = holdout(x, y, test_size=0.2)
-    
-    pipeline = trainer.train(x_train, x_test, y_train, y_test)
+    pipeline = joblib.load('/app/model.joblib')
     
     pickup_datetime = datetime.strptime(pickup_datetime, "%Y-%m-%d %H:%M:%S")
     eastern = pytz.timezone("US/Eastern")

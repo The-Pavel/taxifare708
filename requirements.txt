@@ -5,15 +5,12 @@ twine
 wheel>=0.29
 
 # data science
-numpy
 pandas
 scikit-learn
 
 # API
 gcsfs
 google-cloud-storage
-mlflow
-s3fs
 fastapi
 uvicorn
 
